@@ -54,8 +54,7 @@ while ($true){
 	
 	#get ISBN from user and validate
 	$isbn_lookup = Read-Host "Enter a valid ISBN"
-	$isValid = Validate-ISBN $isbn_lookup
-	if (! $isValid){ continue }
+	if (! Validate-ISBN $isbn_lookup){ continue }
 	
 	#API lookup with ISBN; convert payload to JSON
 	$lib_info = Perform-Lookup $ENDPOINT.Replace("LOOKUP",$isbn_lookup)
@@ -66,7 +65,7 @@ while ($true){
 	#CSV record has following format "isbn|title|full_title|publishers|publish_date|subjects"
 	$output_record = `
 	$isbn_lookup + "|" + `
-	$l.title + "|" +`
+	$l.title + "|" + `
 	$l.full_title + "|" + `
 	$l.publishers + "|" + `
 	$l.publish_date + "|" + `
