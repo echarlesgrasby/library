@@ -8,7 +8,7 @@
 
 [System.Guid]$GUID = New-Guid
 $GUID = $GUID.guid
-$ENDPOINT="https://openlibrary.org/isbn/LOOKUP.json"
+$ENDPOINT="https://openlibrary.org/API/LOOKUP.json"
 $OUTPUT_FILE="lookups_$GUID.csv"
 
 function Validate-ISBN ([string]$isbn_lookup){
@@ -26,16 +26,39 @@ function Validate-ISBN ([string]$isbn_lookup){
 }
 
 function Perform-Lookup ([string]$endpoint, [long]$isbn){
-	"Looking up ${endpoint}"
+	
+	#First, fetch the data by ISBN
+	"Looking up ISBN: ${endpoint}"
 	
 	Try{
-		$output = Invoke-WebRequest $endpoint
+		$book = (Invoke-WebRequest $endpoint.REPLACE("/API/LOOKUP","/isbn/$isbn")).Content | ConvertFrom-JSON
+		$author_lookup = $book.authors.key
 	}Catch{
 		Write-Output "Error occurred when looking up ${isbn}:"
 		Write-Output "$_"
 	}
 	
-	return $output
+	#Manual throttle between requests
+	Start-Sleep -Seconds 2
+	
+	if ($author_lookup -ne $null){ 
+		#Second, fetch the author info
+		"Looking up Author: ${author_lookup}"
+		Try{
+			
+			$author = (Invoke-WebRequest $endpoint.REPLACE("/API/LOOKUP","$author_lookup")).Content | ConvertFrom-JSON
+			$author = $author.name
+		}Catch{
+			Write-Output "Error occurred when looking up ${author_lookup}:"
+			Write-Output "$_"
+		}
+	} 
+	
+	#Last, build an object to return to the caller
+	return @{
+		"book_info" = $book;
+		"author_info" = $author;
+	}
 }
 
 function WriteTo-File ([string]$payload, [string]$filename){
@@ -54,22 +77,27 @@ while ($true){
 	
 	#get ISBN from user and validate
 	$isbn_lookup = Read-Host "Enter a valid ISBN"
-	if (! Validate-ISBN $isbn_lookup){ continue }
+	if (! $(Validate-ISBN $isbn_lookup)){ continue }
+	$isbn10or13 = $isbn_lookup.Length
 	
 	#API lookup with ISBN; convert payload to JSON
-	$lib_info = Perform-Lookup $ENDPOINT.Replace("LOOKUP",$isbn_lookup)
+	$lib_info = Perform-Lookup $ENDPOINT $isbn_lookup
 	if ($lib_info -eq $null){ throw "Error retrieving data" }
-	$l = $lib_info.Content | ConvertFrom-JSON
+	$l = $lib_info
 	
 	#Create CSV record and write to output file
-	#CSV record has following format "isbn|title|full_title|publishers|publish_date|subjects"
+	#CSV record has following format "isbn|isbn10or13|title|full_title|author|publishers|publish_date|subjects"
+	Write-Output "Writing out contents.."
+	Write-Output $l
 	$output_record = `
 	$isbn_lookup + "|" + `
-	$l.title + "|" + `
-	$l.full_title + "|" + `
-	$l.publishers + "|" + `
-	$l.publish_date + "|" + `
-	$l.subjects
+	$isbn10or13 + "|" + `
+	$l["book_info"].title + "|" + `
+	$l["book_info"].full_title + "|" + `
+	$l["author_info"].author + "|" + `
+	$l["book_info"].publishers + "|" + `
+	$l["book_info"].publish_date + "|" + `
+	$l["book_info"].subjects
 	
 	WriteTo-File $output_record $OUTPUT_FILE
 	
