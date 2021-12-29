@@ -16,9 +16,9 @@ if (Test-Path "master_library_file.csv"){
 $file = Import-CSV -Path $MASTER_LIBRARY_FILE -Delimiter "|"
 
 # get unique genres
-foreach($genre in $($file.genre | Select -Unique)){
+foreach($genre in $($file.genres | Select -Unique)){
 	
-	$books = $file | Where-Object {$PSITEM.genre -eq $genre} | Sort-Object -Property Title,Author | Select -Property Title,Author,Publisher,Publication_Date
+	$books = $file | Where-Object {$PSITEM.genres -eq $genre} | Sort-Object -Property Title,Author | Select -Property title,author,publishers,publish_date
 	
 	"<h2>$genre</h2>" | Out-File -Encoding ASCII -Append $OUTPUT_FILE
 	$books | ConvertTo-HTML -Fragment | Out-File -Encoding ASCII -Append $OUTPUT_FILE
