@@ -10,32 +10,39 @@
 $GUID = $GUID.guid
 $ENDPOINT="https://openlibrary.org/API/LOOKUP.json"
 $OUTPUT_FILE="lookups_$GUID.csv"
+[boolean]$DEBUG=$false
 
 function Validate-ISBN ([string]$isbn_lookup){
-	[boolean]$valid=1
+	#Validate that the provided ISBN only contains digits and that it is an ISBN-10 or ISBN-13
 	
-	if($($isbn_lookup | Select-String "^\d+$") -eq $null){
+	[boolean]$valid=$true
+	
+	#Some ISBNs contain an X as the last character
+	if($($isbn_lookup | Select-String "^\d+X?$") -eq $null){
 		Write-Error "ISBN contains illegal characters. HINT: Only enter numeric chars, no hyphens."
-		$valid=0
-	}elseif(@(10,13) -NotContains "$isbn_lookup".Length){
+		$valid=$false
+	}
+	
+	if(@(10,13) -NotContains "$isbn_lookup".Length){
 		Write-Error "Provided ISBN is invalid length. ISBN should only be 10 or 13 char long."
-		$valid=0
+		$valid=$false
 	}
 	
 	return $valid
 }
 
-function Perform-Lookup ([string]$endpoint, [long]$isbn){
+function Perform-Lookup ([string]$endpoint, [string]$isbn){
+	#Perform a lookup based on an ISBN provided by the user. 
+	#Then perform a secondary lookup for the author name based on isbn lookup results
 	
 	#First, fetch the data by ISBN
 	"Looking up ISBN: ${endpoint}"
 	
 	Try{
-		$book = (Invoke-WebRequest $endpoint.REPLACE("/API/LOOKUP","/isbn/$isbn")).Content | ConvertFrom-JSON
+		$book = (Invoke-WebRequest $endpoint.Replace("/API/LOOKUP","/isbn/$isbn")).Content | ConvertFrom-JSON
 		$author_lookup = $book.authors.key
 	}Catch{
-		Write-Output "Error occurred when looking up ${isbn}:"
-		Write-Output "$_"
+		Write-Error "Error occurred when looking up ${isbn}: $_" -ErrorAction Stop
 	}
 	
 	#Manual throttle between requests
@@ -45,60 +52,66 @@ function Perform-Lookup ([string]$endpoint, [long]$isbn){
 		#Second, fetch the author info
 		"Looking up Author: ${author_lookup}"
 		Try{
-			
-			$author = (Invoke-WebRequest $endpoint.REPLACE("/API/LOOKUP","$author_lookup")).Content | ConvertFrom-JSON
-			$author = $author.name
+			$author = (Invoke-WebRequest $endpoint.Replace("/API/LOOKUP","$author_lookup")).Content | ConvertFrom-JSON
 		}Catch{
-			Write-Output "Error occurred when looking up ${author_lookup}:"
-			Write-Output "$_"
+			Write-Error "Error occurred when looking up ${author_lookup}: $_"
 		}
 	} 
 	
 	#Last, build an object to return to the caller
-	return @{
-		"book_info" = $book;
-		"author_info" = $author;
+	$book_info = @{
+		"isbn" = $isbn
+		"title" = $book.title;
+		"full_title" = $book.full_title;
+		"author" = $author.name -Join ", ";
+		"revision" = $book.revision;
+		"publishers" = $book.publishers -Join ", ";
+		"publish_date" = $book.publish_date;
+		"genre" = $book.subjects -Join ", ";
 	}
+	
+	#if debug flag is enabled, print this object to Out-GridView
+	if($DEBUG){ $book_info | Out-GridView -Title "$isbn - Fetched Results" }
+	
+	return $book_info
+}
+
+function Generate-Record ($l){
+	#Create CSV record and write to output file
+	#CSV record has following format "isbn|isbn10or13|title|full_title|author|revision#|publishers|publish_date|genres"
+	
+	return `
+	($l.isbn).ToString() + "|" + `
+	($l.isbn).ToString().Length + "|" + `
+	$l.title + "|" + `
+	$l.full_title + "|" + `
+	$l.author + "|" + `
+	$l.revision + "|" + `
+	$l.publishers + "|" + `
+	$l.publish_date + "|" + `
+	$l.genre
+	
 }
 
 function WriteTo-File ([string]$payload, [string]$filename){
+	#Write payload to output file
+	
 	"$payload" | Add-Content $filename
 }
-
-"
-##-----------------------##
-    ISBN Lookup Utility`n
-      CTL-C to quit.
-##-----------------------##
-"
 
 #loop forever until user runs CTL-C
 while ($true){
 	
 	#get ISBN from user and validate
-	$isbn_lookup = Read-Host "Enter a valid ISBN"
-	if (! $(Validate-ISBN $isbn_lookup)){ continue }
-	$isbn10or13 = $isbn_lookup.Length
+	$isbn_lookup = Read-Host -Prompt "Enter a valid ISBN. (CTRL-C to quit)"
+	if (! $(Validate-ISBN $isbn_lookup)){ Continue }
 	
 	#API lookup with ISBN; convert payload to JSON
 	$lib_info = Perform-Lookup $ENDPOINT $isbn_lookup
 	if ($lib_info -eq $null){ throw "Error retrieving data" }
-	$l = $lib_info
 	
-	#Create CSV record and write to output file
-	#CSV record has following format "isbn|isbn10or13|title|full_title|author|publishers|publish_date|subjects"
-	Write-Output "Writing out contents.."
-	Write-Output $l
-	$output_record = `
-	$isbn_lookup + "|" + `
-	$isbn10or13 + "|" + `
-	$l["book_info"].title + "|" + `
-	$l["book_info"].full_title + "|" + `
-	$l["author_info"].author + "|" + `
-	$l["book_info"].publishers + "|" + `
-	$l["book_info"].publish_date + "|" + `
-	$l["book_info"].subjects
-	
+	#create and write output data
+	$output_record = Generate-Record $lib_info
 	WriteTo-File $output_record $OUTPUT_FILE
 	
 }
