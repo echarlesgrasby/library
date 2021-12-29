@@ -54,7 +54,7 @@ function Perform-Lookup ([string]$endpoint, [string]$isbn){
 		Try{
 			$author = (Invoke-WebRequest $endpoint.Replace("/API/LOOKUP","$author_lookup")).Content | ConvertFrom-JSON
 		}Catch{
-			Write-Error "Error occurred when looking up ${author_lookup}: $_"
+			Write-Error "Error occurred when looking up ${author_lookup}: $_" -ErrorAction Stop
 		}
 	} 
 	
