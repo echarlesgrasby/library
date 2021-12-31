@@ -9,7 +9,7 @@
 [System.Guid]$GUID = New-Guid
 $GUID = $GUID.guid
 $ENDPOINT="https://openlibrary.org/API/LOOKUP.json"
-$OUTPUT_FILE="lookups_$GUID.csv"
+$OUTPUT_FILE="$PSSCRIPTROOT\lookups_$GUID.csv"
 [boolean]$DEBUG=$false
 
 function Validate-ISBN ([string]$isbn_lookup){
