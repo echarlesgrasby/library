@@ -1,28 +1,33 @@
 #process_library_file.ps1
 
 $MASTER_LIBRARY_FILE="master_library_file.csv"
+$TEMPLATE_FILE="template.html"
 $OUTPUT_FILE="test.html"
+$STYLESHEET="styles.css"
 
-$null | Out-File -Encoding ASCII $OUTPUT_FILE
-
-if (Test-Path "master_library_file.csv"){ 
-	$MASTER_LIBRARY_FILE="master_library_file.csv"
-}elseif (Test-Path $MASTER_LIBRARY_FILE){
-	# do nothing
-}else{
+# validate that the library files are available
+if (! (Test-Path $MASTER_LIBRARY_FILE)){ 
 	Write-Error -ErrorAction Stop "No Master Library File found. Please fix." 
 }
+if (! (Test-Path $TEMPLATE_FILE)){
+	Write-Error -ErrorAction Stop "No HTML template file found. Please fix."
+}
+if (! (Test-Path $STYLESHEET)){
+	Write-Error -ErrorAction Stop "No stylesheet found. Please fix."
+}
 
+# load the master library file
 $file = Import-CSV -Path $MASTER_LIBRARY_FILE -Delimiter "|"
 
 # get unique genres
 foreach($genre in $($file.genres | Select -Unique)){
 	
-	$books = $file | Where-Object {$PSITEM.genres -eq $genre} | Sort-Object -Property Title,Author | Select -Property title,author,publishers,publish_date
-	
-	"<h2>$genre</h2>" | Out-File -Encoding ASCII -Append $OUTPUT_FILE
-	$books | ConvertTo-HTML -Fragment | Out-File -Encoding ASCII -Append $OUTPUT_FILE
+	$books = $file | Where-Object {$PSITEM.genres -eq $genre} | Sort-Object -Property author,publish_date | Select -Property title,author,publishers,publish_date
+	$op_books += "<h2>$genre</h2>"
+	$op_books += $books | ConvertTo-HTML -Fragment
 	
 }
+
+(Get-Content $TEMPLATE_FILE).Replace("<!--ENTRIES-->",$op_books) | Out-File -Encoding ASCII $OUTPUT_FILE
 
 "Complete."
