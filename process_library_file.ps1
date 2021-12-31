@@ -1,6 +1,6 @@
 #process_library_file.ps1
 
-$MASTER_LIBRARY_FILE="master_library_file.csv"
+$MASTER_LIBRARY_FILE="data/master_library_file.csv"
 $TEMPLATE_FILE="template.html"
 $OUTPUT_FILE="test.html"
 $STYLESHEET="styles.css"
