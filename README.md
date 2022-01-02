@@ -2,7 +2,7 @@
 
 A maintenance list of all the books that I currently have in my personal library. This repo has a small set of tools that fetch this info from the Internet Archive's OpenLibrary API.
 
-![Current Output Catalog](./screenshots/readme_1.png "Current Output Catalog")
+![Current Output Catalog](./screenshots/readme_2.png "Current Output Catalog")
 
 ## Scripts
 
