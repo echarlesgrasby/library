@@ -40,6 +40,8 @@ $file = Import-Csv $MASTER_LIBRARY_FILE -Delimiter "|"
 	Mystery
 	African American
 	Young Adult
+	Self-Help
+	Music
 #>
 
 # standardize the genre names
@@ -61,7 +63,7 @@ foreach($record in $file){
 		'[Yy]oung|[Jj]uvenile|high school' {"Young Adult"; Break;}
 		'intimacy|marriage|conflict' {"Self-Help"; Break;}
 		'music' {"Music"; Break;}
-		Default {"$PSITEM";Break;}
+		Default {$record.genres;Break;}
 	})
 	
 	$record.genres = $standard_genre
