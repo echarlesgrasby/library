@@ -1,10 +1,10 @@
 #process_library_file.ps1
 
-$MASTER_LIBRARY_FILE="data/master_library_file.csv"
-$PREPARED_LIBRARY_FILE="data/prepared_library_file.csv"
-$TEMPLATE_FILE="template.html"
-$OUTPUT_FILE="test.html"
-$STYLESHEET="styles.css"
+$MASTER_LIBRARY_FILE="$PSSCRIPTROOT\data\master_library_file.csv"		#versioned
+$PREPARED_LIBRARY_FILE="$PSSCRIPTROOT\data\prepared_library_file.csv" #non-versioned
+$TEMPLATE_FILE="$PSSCRIPTROOT\template.html"
+$OUTPUT_FILE="$PSSCRIPTROOT\library.html"
+$STYLESHEET="$PSSCRIPTROOT\styles.css"
 
 # validate that the library files are available
 if (! (Test-Path $MASTER_LIBRARY_FILE)){ 
@@ -16,12 +16,12 @@ if (! (Test-Path $TEMPLATE_FILE)){
 if (! (Test-Path $STYLESHEET)){
 	Write-Error -ErrorAction Stop "No stylesheet found. Please fix."
 }
+if (Test-Path $PREPARED_LIBRARY_FILE){
+	Remove-Item $PREPARED_LIBRARY_FILE
+}
 
 # load the master library file
-$raw_file = Import-CSV -Path $MASTER_LIBRARY_FILE -Delimiter "|"
-$file = $raw_file | Select -Property title,author,publishers,publish_date,genres
-$file | Out-File -Encoding ASCII $PREPARED_LIBRARY_FILE
-
+$file = Import-Csv $MASTER_LIBRARY_FILE -Delimiter "|"
 
 <#
 	Standardize genre names via regular expressions. This list should be updated / captured via a Great Expectations test.
@@ -41,10 +41,11 @@ $file | Out-File -Encoding ASCII $PREPARED_LIBRARY_FILE
 	African American
 	Young Adult
 #>
-$genres=@()
-$file.genres | Select -Unique | ForEach-Object {
+
+# standardize the genre names
+foreach($record in $file){
 	
-	$genre = $(switch -Regex ($PSITEM)
+	$standard_genre = $(switch -Regex ($record.genres)
 	{
 		'[Ss]cience [Ff]iction|SciFi|scifi' {"Science Fiction"; Break;}
 		'[Hh]ist.*[Ff]iction' {"Historical Fiction"; Break;}
@@ -52,16 +53,25 @@ $file.genres | Select -Unique | ForEach-Object {
 		'[Hh]igh [Ff]antasy' {"High Fantasy"; Break;}
 		'[Ee]pic [Ff]antasy' {"Epic Fantasy"; Break;}
 		'[Ff]antasy' {"Fantasy"; Break;}
-		'[Ll]ing.*[Ll]anguage' {"Linguistics"; Break;}
+		'[Ll]ing.*|[Ll]anguage' {"Linguistics"; Break;}
+		'[Hh]or.*' {"Horror"; Break;}
+		'[Cc]omic' {"Comics"; Break;}
+		'[Mm]ystey' {"Mystery"; Break;}
+		'[Aa]frican' {"African / African American"; Break;}
+		'[Yy]oung|[Jj]uvenile|high school' {"Young Adult"; Break;}
+		'intimacy|marriage|conflict' {"Self-Help"; Break;}
+		'music' {"Music"; Break;}
 		Default {"$PSITEM";Break;}
 	})
-	$genres+=$genre
+	
+	$record.genres = $standard_genre
+	$record | Out-File -Append -Encoding ASCII $PREPARED_LIBRARY_FILE
 }
 
 # prepare the html output
-foreach($genre in $($genres | Select -Unique)){
+foreach($genre in $($file.genres | Select -Unique)){
 	
-	$books = $file | Where-Object {$PSITEM.genres -eq $genre} | Sort-Object -Property author,publish_date
+	$books = $file | Where-Object {$PSITEM.genres -eq $genre} | Sort-Object -Property author,publish_date | Select -Property title,author,publishers,publish_date
 	$op_books += "<h2>$genre</h2>"
 	$op_books += $books | ConvertTo-HTML -Fragment
 	
