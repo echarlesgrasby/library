@@ -5,7 +5,7 @@
 Describe 'Validate-ISBN' {
 	
 	BeforeAll {
-		. $PSSCRIPTROOT\resources\libfunctions.ps1
+		. $PSSCRIPTROOT\..\resources\libfunctions.ps1
 	}
 
 	It 'Given $null input as ISBN, result should be false' {
@@ -35,6 +35,10 @@ Describe 'Validate-ISBN' {
 	It 'Given 10 digit ISBN (ending in X), result should be true' {
 		$result = Validate-ISBN "928422356X"
 		$result | Should Be $true
+	}
+	It 'Given 10 digit ISBN (ending in Z), result should be false' {
+		$result = Validate-ISBN "928422356Z"
+		$result | Should Be $false
 	}
 	It 'Given 13 digit ISBN, result should be true' {
 		$result = Validate-ISBN "9284423563562"
