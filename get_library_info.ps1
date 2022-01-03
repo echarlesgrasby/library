@@ -36,7 +36,6 @@ function Perform-Lookup ([string]$endpoint, [string]$isbn){
 	#Then perform a secondary lookup for the author name based on isbn lookup results
 	
 	#First, fetch the data by ISBN
-	"Looking up ISBN: ${endpoint}"
 	
 	Try{
 		$book = (Invoke-WebRequest $endpoint.Replace("/API/LOOKUP","/isbn/$isbn")).Content | ConvertFrom-JSON
@@ -50,7 +49,7 @@ function Perform-Lookup ([string]$endpoint, [string]$isbn){
 	
 	if ($author_lookup -ne $null){ 
 		#Second, fetch the author info
-		"Looking up Author: ${author_lookup}"
+
 		Try{
 			$author = (Invoke-WebRequest $endpoint.Replace("/API/LOOKUP","$author_lookup")).Content | ConvertFrom-JSON
 		}Catch{
