@@ -18,8 +18,8 @@ jobs:
             sudo dpkg -i packages-microsoft-prod.deb;
             sudo apt-get update;
             sudo apt-get install -y powershell;
-            pwsh ./tests/run_pester_install.ps1
+            pwsh "Install-Module -Name "Pester" -RequiredVersion 3.4.0"
         # Execute Pester Tests
         - name: Execute unit tests
           run: |
-            pwsh ./tests/run_pester_tests.ps1;
+            pwsh "Invoke-Pester ./tests/Validate-ISBN.Tests.ps1"
