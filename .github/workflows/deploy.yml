@@ -26,4 +26,4 @@ jobs:
         - name: Execute unit tests
           run: |
             #pwsh -Command 'Invoke-Pester ./project/tests/Validate-ISBN.Tests.ps1'
-            ls -la /home/runner/work/library/library/
+            ls -la /home/runner/work/library/library/project/*
