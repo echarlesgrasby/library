@@ -10,6 +10,7 @@ jobs:
         - name: Checkout project
           uses: actions/checkout@v2
           with:
+            ref: add-unit-tests
             path: project
         
         # Install dependencies, right version of Pester, everything else should be Powershell native
@@ -25,5 +26,4 @@ jobs:
         # Execute Pester Tests
         - name: Execute unit tests
           run: |
-            #pwsh -Command 'Invoke-Pester ./project/tests/Validate-ISBN.Tests.ps1'
-            ls -la /home/runner/work/library/library/project/*
+            pwsh -Command 'Invoke-Pester ./project/tests/Validate-ISBN.Tests.ps1'
