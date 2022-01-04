@@ -9,7 +9,7 @@
 [System.Guid]$GUID = New-Guid
 $GUID = $GUID.guid
 $ENDPOINT="https://openlibrary.org/API/LOOKUP.json"
-$OUTPUT_FILE="$PSSCRIPTROOT\lookups_$GUID.csv"
+$OUTPUT_FILE="$PSSCRIPTROOT\data\lookups_$GUID.csv"
 [boolean]$DEBUG=$false
 
 #try to source in the dependent functions first and error out if they cannot be imported
