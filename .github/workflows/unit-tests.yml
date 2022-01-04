@@ -22,7 +22,7 @@ jobs:
             sudo dpkg -i packages-microsoft-prod.deb;
             sudo apt-get update;
             sudo apt-get install -y powershell;
-            pwsh -Command 'Install-Module -Name "Pester" -RequiredVersion 3.4.0 -Confirm:$false';
+            pwsh -Command 'echo "Y" | Install-Module -Name "Pester" -RequiredVersion 3.4.0 -Confirm:$false';
         # Execute Pester Tests
         - name: Execute unit tests
           run: |
