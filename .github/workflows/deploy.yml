@@ -18,7 +18,8 @@ jobs:
             sudo dpkg -i packages-microsoft-prod.deb;
             sudo apt-get update;
             sudo apt-get install -y powershell;
-            pwsh 'Install-Module -Name "Pester" -RequiredVersion 3.4.0'
+            pwsh 'Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force';
+            pwsh 'Install-Module -Name "Pester" -RequiredVersion 3.4.0';
         # Execute Pester Tests
         - name: Execute unit tests
           run: |
